@@ -1,0 +1,164 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* RaagWeather Premium Color Palette - HSL Only */
+    --background: 240 45% 8%;
+    --foreground: 45 25% 96%;
+
+    --card: 240 40% 12%;
+    --card-foreground: 45 25% 96%;
+    --card-glass: 240 40% 15% / 0.6;
+
+    --popover: 240 40% 12%;
+    --popover-foreground: 45 25% 96%;
+
+    --primary: 270 70% 50%;
+    --primary-foreground: 45 25% 98%;
+    --primary-glow: 270 70% 60%;
+
+    --secondary: 180 90% 50%;
+    --secondary-foreground: 240 50% 10%;
+
+    --accent: 330 85% 60%;
+    --accent-foreground: 45 25% 98%;
+
+    --muted: 240 30% 20%;
+    --muted-foreground: 240 10% 60%;
+
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 45 25% 98%;
+
+    --border: 240 30% 25%;
+    --input: 240 35% 18%;
+    --ring: 270 70% 50%;
+
+    --radius: 1rem;
+
+    /* Premium Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(270 70% 50%) 0%, hsl(330 85% 60%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(180 90% 50%) 0%, hsl(270 70% 50%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(240 45% 8%) 0%, hsl(240 50% 15%) 50%, hsl(270 60% 20%) 100%);
+    --gradient-glass: linear-gradient(135deg, hsl(240 40% 15% / 0.8) 0%, hsl(270 50% 20% / 0.6) 100%);
+    
+    /* Shadows & Glows */
+    --shadow-glow: 0 0 40px hsl(270 70% 50% / 0.4);
+    --shadow-glass: 0 8px 32px hsl(240 50% 5% / 0.5);
+    --shadow-elevated: 0 20px 60px hsl(240 60% 5% / 0.7);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Dark mode uses same vibrant theme */
+    --background: 240 45% 8%;
+    --foreground: 45 25% 96%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background: linear-gradient(180deg, hsl(240 45% 8%) 0%, hsl(240 50% 12%) 50%, hsl(270 60% 15%) 100%);
+    background-attachment: fixed;
+  }
+
+  /* Glassmorphism utilities */
+  .glass {
+    @apply bg-card/60 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)];
+  }
+
+  .glass-hover {
+    @apply glass transition-all duration-300 hover:bg-card/80 hover:border-white/20 hover:shadow-[0_12px_48px_rgba(0,0,0,0.5)];
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-accent to-secondary;
+  }
+
+  /* Premium glow effects */
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3), 0 0 40px hsl(var(--primary) / 0.2);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 20px hsl(var(--accent) / 0.3), 0 0 40px hsl(var(--accent) / 0.2);
+  }
+}
+
+@layer components {
+  /* Animated floating effect */
+  .float-animation {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  /* Pulse glow */
+  .pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { 
+      box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+    }
+    50% { 
+      box-shadow: 0 0 40px hsl(var(--primary) / 0.6), 0 0 60px hsl(var(--accent) / 0.4);
+    }
+  }
+
+  /* Shimmer effect */
+  .shimmer {
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.3), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* Spin animation for album art */
+  .spin-slow {
+    animation: spin 20s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+}

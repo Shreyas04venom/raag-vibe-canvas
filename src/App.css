@@ -1,0 +1,79 @@
+/* RaagWeather Global Styles */
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 0px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.5);
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+}
+
+/* Selection */
+::selection {
+  background: hsl(var(--primary) / 0.3);
+  color: hsl(var(--foreground));
+}
+
+/* Focus Visible */
+*:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Disable default focus for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Hide scrollbar for carousel sections */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  height: 0 !important;
+  width: 0 !important;
+}
+
+.hide-scrollbar::-webkit-scrollbar-track {
+  display: none !important;
+}
+
+.hide-scrollbar::-webkit-scrollbar-thumb {
+  display: none !important;
+}
+
+/* Force horizontal scrolling only for scroll areas */
+[data-radix-scroll-area-viewport] {
+  overflow-y: hidden !important;
+  overflow-x: auto !important;
+  scroll-behavior: smooth;
+  cursor: grab;
+}
+
+[data-radix-scroll-area-viewport]:active {
+  cursor: grabbing;
+}
+
