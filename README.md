@@ -1,5 +1,7 @@
 # RaagWeather - Weather-Driven Music Streaming Platform
+RaagWeather is a weather‑aware music discovery app that maps live weather conditions to moods and surfaces Bollywood/Tollywood/Hollywood/Regional tracks through a rich, glassmorphism UI. The current build has a fully functional frontend with filtering by mood, category, and language, plus flows for playlists, favorites, parties, and profiles. Backend APIs, auth, and DB wiring are partially designed but not yet fully implemented, and audio playback still depends on integrating a sustainable music source. The project demonstrates strong system design, API integration planning, and advanced UI/UX, with clear next steps toward full end‑to‑end functionality.
 
+but my plan is:-
 A fully interactive, production-ready music streaming application that curates playlists based on real-time weather conditions. Built with React 18, TypeScript, Vite, Tailwind CSS, Shadcn UI, and Framer Motion.
 
 ## ✨ Features
