@@ -1,0 +1,227 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "raagweather-mcp",
+      "version": "0.1.0",
+      "title": "RaagWeather MCP"
+    },
+    "tools": [
+      {
+        "name": "search_music",
+        "title": "Search music",
+        "description": "Search the RaagWeather catalog for songs, artists, or albums by keyword.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The search term (song title, artist, or album)."
+            },
+            "type": {
+              "default": "all",
+              "description": "Restrict results to a specific entity type.",
+              "type": "string",
+              "enum": [
+                "track",
+                "artist",
+                "album",
+                "all"
+              ]
+            },
+            "limit": {
+              "default": 10,
+              "description": "Max results.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          "required": [
+            "query"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_weather_recommendations",
+        "title": "Get weather-based music recommendations",
+        "description": "Recommend a music playlist tailored to a weather condition (e.g. rainy, sunny, cloudy).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "weather": {
+              "type": "string",
+              "enum": [
+                "sunny",
+                "rainy",
+                "cloudy",
+                "snowy",
+                "windy",
+                "stormy"
+              ],
+              "description": "Current weather condition."
+            },
+            "mood": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "romantic",
+                    "energetic",
+                    "chill",
+                    "devotional",
+                    "party",
+                    "melancholic"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional mood filter."
+            },
+            "language": {
+              "default": "hindi",
+              "description": "Preferred song language.",
+              "type": "string",
+              "enum": [
+                "hindi",
+                "english",
+                "tamil",
+                "telugu",
+                "punjabi",
+                "marathi"
+              ]
+            }
+          },
+          "required": [
+            "weather",
+            "mood"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_trending",
+        "title": "Get trending songs",
+        "description": "List trending songs on RaagWeather filtered by region and genre.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "region": {
+              "default": "bollywood",
+              "description": "Region / industry filter.",
+              "type": "string",
+              "enum": [
+                "bollywood",
+                "tollywood",
+                "hollywood",
+                "regional",
+                "global"
+              ]
+            },
+            "genre": {
+              "default": "all",
+              "description": "Optional genre filter.",
+              "type": "string",
+              "enum": [
+                "romantic",
+                "dance",
+                "chill",
+                "devotional",
+                "party",
+                "all"
+              ]
+            },
+            "limit": {
+              "default": 10,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_playlist",
+        "title": "Create playlist",
+        "description": "Create a new playlist with a name, description, and initial list of track titles.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "description": "Playlist name."
+            },
+            "description": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 280
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional description."
+            },
+            "trackTitles": {
+              "default": [],
+              "description": "Initial track titles to add to the playlist.",
+              "maxItems": 50,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "isPublic": {
+              "default": true,
+              "description": "Whether the playlist is publicly shareable.",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "name",
+            "description"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
