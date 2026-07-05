@@ -1,271 +1,92 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '../hooks/use-toast';
-// @ts-ignore
-import { createClient } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import type { User, Session } from '@supabase/supabase-js';
+import { toast } from 'sonner';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-const auth = supabase.auth;
-
-interface User {
+interface Profile {
   id: string;
-  email: string;
-  name: string;
-  avatar?: string;
-  isPremium: boolean;
-  language: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  premium: boolean;
 }
 
-interface AuthContextType {
+interface AuthCtx {
   user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string) => Promise<void>;
-  logout: () => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
-  updateProfile: (updates: Partial<User>) => void;
-  requestPasswordReset: (email: string) => Promise<void>;
-  verifyOTP: (otp: string) => Promise<void>;
+  session: Session | null;
+  profile: Profile | null;
+  loading: boolean;
+  signUp: (email: string, password: string, displayName: string) => Promise<{ error?: string }>;
+  signIn: (email: string, password: string) => Promise<{ error?: string }>;
+  signOut: () => Promise<void>;
+  updateProfile: (patch: Partial<Profile>) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const Ctx = createContext<AuthCtx | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Check for existing session on mount
   useEffect(() => {
-    // Check Supabase auth session
-    auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        const userData: User = {
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || '',
-          avatar: session.user.user_metadata?.avatar_url,
-          isPremium: session.user.user_metadata?.isPremium || false,
-          language: session.user.user_metadata?.language || 'en',
-        };
-        setUser(userData);
-        localStorage.setItem('raagweather_user', JSON.stringify(userData));
-        localStorage.setItem('auth_token', session.access_token);
-      }
-      setIsLoading(false);
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      setSession(s);
+      setUser(s?.user ?? null);
+      if (s?.user) setTimeout(() => loadProfile(s.user.id), 0);
+      else setProfile(null);
     });
-
-    // Listen for auth state changes
-    const { data: { subscription } } = auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        const userData: User = {
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || '',
-          avatar: session.user.user_metadata?.avatar_url,
-          isPremium: session.user.user_metadata?.isPremium || false,
-          language: session.user.user_metadata?.language || 'en',
-        };
-        setUser(userData);
-        localStorage.setItem('raagweather_user', JSON.stringify(userData));
-        localStorage.setItem('auth_token', session.access_token);
-      } else {
-        setUser(null);
-        localStorage.removeItem('raagweather_user');
-        localStorage.removeItem('auth_token');
-      }
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+      if (data.session?.user) loadProfile(data.session.user.id);
+      setLoading(false);
     });
-
-    return () => subscription.unsubscribe();
+    return () => sub.subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await auth.signInWithPassword({ email, password });
-      
-      if (error) throw error;
-      
-      if (data.user) {
-        const userData: User = {
-          id: data.user.id,
-          email: data.user.email || '',
-          name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || '',
-          avatar: data.user.user_metadata?.avatar_url,
-          isPremium: data.user.user_metadata?.isPremium || false,
-          language: data.user.user_metadata?.language || 'en',
-        };
-        
-        setUser(userData);
-        localStorage.setItem('raagweather_user', JSON.stringify(userData));
-        localStorage.setItem('auth_token', data.session.access_token);
-        
-        toast({
-          title: 'Login successful',
-          description: 'Welcome back!',
-        });
-        
-        navigate('/home');
-      }
-    } catch (error: any) {
-      toast({
-        title: 'Login failed',
-        description: error.message || 'Invalid credentials',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  async function loadProfile(uid: string) {
+    const { data } = await supabase.from('profiles').select('id,display_name,avatar_url,bio,premium').eq('id', uid).maybeSingle();
+    if (data) setProfile(data as Profile);
+  }
 
-  const signup = async (email: string, password: string, name: string) => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await auth.signUp({
-        email,
-        password,
-        options: {
-          data: { name },
-        },
-      });
-      
-      if (error) throw error;
-      
-      if (data.user) {
-        const userData: User = {
-          id: data.user.id,
-          email: data.user.email || '',
-          name: name,
-          avatar: data.user.user_metadata?.avatar_url,
-          isPremium: data.user.user_metadata?.isPremium || false,
-          language: data.user.user_metadata?.language || 'en',
-        };
-        
-        setUser(userData);
-        localStorage.setItem('raagweather_user', JSON.stringify(userData));
-        if (data.session?.access_token) {
-          localStorage.setItem('auth_token', data.session.access_token);
-        }
-        
-        toast({
-          title: 'Account created',
-          description: 'Welcome to RaagWeather!',
-        });
-        
-        navigate('/home');
-      }
-    } catch (error: any) {
-      toast({
-        title: 'Signup failed',
-        description: error.message || 'Something went wrong',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loginWithGoogle = async () => {
-    setIsLoading(true);
-    try {
-      const { error } = await auth.signInWithOAuth({ provider: 'google' });
-      if (error) throw error;
-      // The auth state change listener will handle the rest
-    } catch (error: any) {
-      toast({
-        title: 'Google sign-in failed',
-        description: error.message || 'Please try again.',
-        variant: 'destructive',
-      });
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await auth.signOut();
-      setUser(null);
-      localStorage.removeItem('raagweather_user');
-      localStorage.removeItem('auth_token');
-      toast({
-        title: 'Logged out',
-        description: 'Come back soon!',
-      });
-      navigate('/');
-    } catch (error: any) {
-      toast({
-        title: 'Logout failed',
-        description: error.message || 'Something went wrong',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const updateProfile = (updates: Partial<User>) => {
+  async function signUp(email: string, password: string, displayName: string) {
+    const { error } = await supabase.auth.signUp({
+      email, password,
+      options: { emailRedirectTo: `${window.location.origin}/home`, data: { display_name: displayName } },
+    });
+    if (error) return { error: error.message };
+    toast.success('Welcome to RaagWeather!');
+    return {};
+  }
+  async function signIn(email: string, password: string) {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { error: error.message };
+    toast.success('Welcome back!');
+    return {};
+  }
+  async function signOut() {
+    await supabase.auth.signOut();
+    toast.success('Signed out');
+  }
+  async function updateProfile(patch: Partial<Profile>) {
     if (!user) return;
-    
-    const updatedUser = { ...user, ...updates };
-    setUser(updatedUser);
-    localStorage.setItem('raagweather_user', JSON.stringify(updatedUser));
-    
-    toast({
-      title: 'Profile updated',
-      description: 'Your changes have been saved.',
-    });
-  };
-
-  const requestPasswordReset = async (email: string) => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast({
-      title: 'Reset link sent',
-      description: 'Check your email for password reset instructions.',
-    });
-  };
-
-  const verifyOTP = async (otp: string) => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    if (otp === '123456') {
-      toast({
-        title: 'Verified!',
-        description: 'OTP verified successfully.',
-      });
-    } else {
-      throw new Error('Invalid OTP');
-    }
-  };
+    const { error } = await supabase.from('profiles').update(patch as any).eq('id', user.id);
+    if (error) { toast.error(error.message); return; }
+    setProfile((p) => (p ? { ...p, ...patch } : p));
+    toast.success('Profile updated');
+  }
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        isLoading,
-        login,
-        signup,
-        logout,
-        loginWithGoogle,
-        updateProfile,
-        requestPasswordReset,
-        verifyOTP,
-      }}
-    >
+    <Ctx.Provider value={{ user, session, profile, loading, signUp, signIn, signOut, updateProfile }}>
       {children}
-    </AuthContext.Provider>
+    </Ctx.Provider>
   );
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
+export const useAuth = () => {
+  const c = useContext(Ctx);
+  if (!c) throw new Error('useAuth outside provider');
+  return c;
+};

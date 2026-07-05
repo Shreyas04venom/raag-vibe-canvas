@@ -1,96 +1,60 @@
-import { motion } from "framer-motion";
-import { Home, Search, Library, User, Radio } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import logo from "@/assets/raagweather-logo.png";
+import { Link, useLocation } from 'react-router-dom';
+import { Home, Search, Library, User, Users, Music2, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-const navItems = [
-  { icon: Home, label: "Home", path: "/" },
-  { icon: Search, label: "Search", path: "/search" },
-  { icon: Radio, label: "Party", path: "/party" },
-  { icon: Library, label: "Library", path: "/library" },
-  { icon: User, label: "Profile", path: "/profile" },
+const items = [
+  { to: '/home', icon: Home, label: 'Home' },
+  { to: '/search', icon: Search, label: 'Search' },
+  { to: '/library', icon: Library, label: 'Library' },
+  { to: '/party', icon: Users, label: 'Party' },
+  { to: '/profile', icon: User, label: 'Profile' },
 ];
 
 export default function Navigation() {
-  const location = useLocation();
-
+  const loc = useLocation();
   return (
     <>
-      {/* Desktop Sidebar */}
-      <motion.aside
-        initial={{ x: -100, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 glass-hover flex-col p-6 z-40"
-      >
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 mb-8">
-          <img src={logo} alt="RaagWeather" className="w-12 h-12" />
-          <span className="text-2xl font-bold gradient-text">RaagWeather</span>
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 glass border-r border-white/10 flex-col p-6 z-30">
+        <Link to="/home" className="flex items-center gap-2 mb-8">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+            <Music2 className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="font-bold text-lg gradient-text">RaagWeather</h1>
+            <p className="text-[10px] text-muted-foreground -mt-1">Music × Sky</p>
+          </div>
         </Link>
-
-        {/* Nav Items */}
-        <nav className="flex-1 space-y-2">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+        <nav className="flex flex-col gap-1">
+          {items.map((it) => {
+            const active = loc.pathname === it.to || (it.to !== '/home' && loc.pathname.startsWith(it.to));
             return (
-              <Link key={item.path} to={item.path}>
-                <motion.div
-                  whileHover={{ x: 4 }}
-                  className={cn(
-                    "flex items-center gap-4 px-4 py-3 rounded-xl transition-all",
-                    isActive
-                      ? "bg-gradient-to-r from-primary to-accent text-primary-foreground"
-                      : "hover:bg-card/80"
-                  )}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
-                </motion.div>
+              <Link key={it.to} to={it.to} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition ${active ? 'bg-primary/20 text-primary' : 'hover:bg-white/5 text-foreground/70'}`}>
+                <it.icon className="w-5 h-5" />
+                <span className="font-medium">{it.label}</span>
+                {active && <motion.div layoutId="nav-dot" className="ml-auto w-2 h-2 rounded-full bg-primary" />}
               </Link>
             );
           })}
         </nav>
-      </motion.aside>
-
-      {/* Mobile Bottom Nav */}
-      <motion.nav
-        initial={{ y: 100 }}
-        animate={{ y: 0 }}
-        className="lg:hidden fixed bottom-20 left-0 right-0 z-40 px-4"
-      >
-        <div className="glass-hover rounded-3xl p-2 flex items-center justify-around">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link key={item.path} to={item.path} className="flex-1">
-                <motion.div
-                  whileTap={{ scale: 0.95 }}
-                  className={cn(
-                    "flex flex-col items-center gap-1 py-2 px-3 rounded-2xl transition-all",
-                    isActive && "bg-gradient-to-br from-primary/20 to-accent/20"
-                  )}
-                >
-                  <item.icon
-                    className={cn(
-                      "w-6 h-6 transition-colors",
-                      isActive ? "text-primary" : "text-muted-foreground"
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "text-xs font-medium",
-                      isActive ? "text-primary" : "text-muted-foreground"
-                    )}
-                  >
-                    {item.label}
-                  </span>
-                </motion.div>
-              </Link>
-            );
-          })}
+        <div className="mt-auto glass rounded-2xl p-4 border border-primary/30">
+          <div className="flex items-center gap-2 mb-2"><Sparkles className="w-4 h-4 text-primary" /><p className="text-xs font-semibold">Pro tip</p></div>
+          <p className="text-xs text-muted-foreground">Press ⌘K to search anything instantly.</p>
         </div>
-      </motion.nav>
+      </aside>
+
+      {/* Mobile bottom nav */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 glass border-t border-white/10 flex justify-around py-2">
+        {items.map((it) => {
+          const active = loc.pathname === it.to;
+          return (
+            <Link key={it.to} to={it.to} className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+              <it.icon className="w-5 h-5" />
+              <span className="text-[10px] font-medium">{it.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </>
   );
 }
