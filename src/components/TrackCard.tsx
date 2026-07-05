@@ -30,6 +30,7 @@ export default function TrackCard({ track, queue, compact }: Props) {
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
             <Play className="w-5 h-5 fill-white" />
           </div>
+          {isCurrent && isPlaying && <EqBars />}
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium truncate">{track.name}</p>
@@ -55,6 +56,9 @@ export default function TrackCard({ track, queue, compact }: Props) {
           <div className="w-full h-full bg-gradient-to-br from-primary/40 to-accent/40" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition" />
+        {isCurrent && isPlaying && (
+          <div className="absolute top-2 left-2 bg-black/50 backdrop-blur rounded-full p-1.5"><EqBars /></div>
+        )}
         <Button
           size="icon"
           className="absolute bottom-2 right-2 rounded-full bg-primary hover:bg-primary/90 opacity-0 group-hover:opacity-100 transition shadow-xl"
@@ -79,6 +83,11 @@ export default function TrackCard({ track, queue, compact }: Props) {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => playNext(track)}>Play next</DropdownMenuItem>
               <DropdownMenuItem onClick={() => addToQueue(track)}>Add to queue</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => startRadio(track)}><Radio className="w-3 h-3 mr-2" />Start radio</DropdownMenuItem>
+              <DropdownMenuItem onClick={async () => {
+                const url = track.videoId ? `https://youtu.be/${track.videoId}` : window.location.href;
+                try { if (navigator.share) await navigator.share({ title: track.name, text: `${track.name} — ${track.artist}`, url }); else { await navigator.clipboard.writeText(url); toast.success('Link copied'); } } catch {}
+              }}><Share2 className="w-3 h-3 mr-2" />Share</DropdownMenuItem>
               <DropdownMenuSeparator />
               {playlists.length === 0 && <DropdownMenuItem disabled>No playlists yet</DropdownMenuItem>}
               {playlists.map((p) => (
@@ -91,5 +100,19 @@ export default function TrackCard({ track, queue, compact }: Props) {
         </div>
       </div>
     </motion.div>
+  );
+}
+
+function EqBars() {
+  return (
+    <div className="flex items-end gap-0.5 h-3">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="w-0.5 bg-primary rounded-sm animate-eq"
+          style={{ animationDelay: `${i * 120}ms` }}
+        />
+      ))}
+    </div>
   );
 }
