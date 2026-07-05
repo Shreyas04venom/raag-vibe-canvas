@@ -1,275 +1,150 @@
-// @ts-nocheck
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { useParty } from '../contexts/PartyContext';
-import { useMusic } from '../contexts/MusicContext';
-import { motion } from 'framer-motion';
-import { Music, Users, Send, X, Radio, ChevronDown } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import Navigation from '@/components/Navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { SAMPLE_TRENDING_SONGS, SAMPLE_RECENT_SONGS, SAMPLE_FAVORITE_SONGS, Song } from '../data/songs';
+import { Users, Send, Copy, Plus, LogOut } from 'lucide-react';
+import { toast } from 'sonner';
 
-const Party: React.FC = () => {
-  const { partyId } = useParams<{ partyId: string }>();
-  const { party, joinParty, leaveParty, messages, sendMessage, currentUserName } = useParty();
-  const { currentTrack, isPlaying, progress, volume, playTrack, pauseTrack, resumeTrack, seekTo, setVolume } = useMusic();
-  const [message, setMessage] = useState('');
-  const [showSongDialog, setShowSongDialog] = useState(false);
-  const [selectedSong, setSelectedSong] = useState<Song | null>(null);
-  
-  // Combine all songs
-  const allSongs = [...SAMPLE_TRENDING_SONGS, ...SAMPLE_RECENT_SONGS, ...SAMPLE_FAVORITE_SONGS];
-  // Remove duplicates by ID
-  const uniqueSongs = Array.from(new Map(allSongs.map(song => [song.id, song])).values());
+export default function Party() {
+  const { id } = useParams();
+  const { user } = useAuth();
+  const nav = useNavigate();
+  const [parties, setParties] = useState<any[]>([]);
+  const [name, setName] = useState('');
+  const [joinCode, setJoinCode] = useState('');
+  const [party, setParty] = useState<any>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [members, setMembers] = useState<any[]>([]);
+  const [msg, setMsg] = useState('');
 
+  // list
   useEffect(() => {
-    if (partyId) {
-      joinParty(partyId);
-    }
-    return () => {
-      leaveParty();
-    };
-  }, [partyId]);
+    if (id) return;
+    supabase.from('parties').select('*').order('created_at', { ascending: false }).limit(20).then(({ data }) => setParties(data ?? []));
+  }, [id]);
 
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      sendMessage(message);
-      setMessage('');
-    }
+  // room
+  useEffect(() => {
+    if (!id) return;
+    let sub: any;
+    (async () => {
+      const { data } = await supabase.from('parties').select('*').eq('id', id).maybeSingle();
+      setParty(data);
+      if (user) {
+        await supabase.from('party_members').upsert({ party_id: id, user_id: user.id }, { onConflict: 'party_id,user_id' });
+      }
+      const { data: msgs } = await supabase.from('party_messages').select('*').eq('party_id', id).order('created_at').limit(100);
+      setMessages(msgs ?? []);
+      const { data: mem } = await supabase.from('party_members').select('*').eq('party_id', id);
+      setMembers(mem ?? []);
+      sub = supabase.channel(`party:${id}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'party_messages', filter: `party_id=eq.${id}` }, (p) => setMessages((m) => [...m, p.new]))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'party_members', filter: `party_id=eq.${id}` }, async () => {
+          const { data: mem } = await supabase.from('party_members').select('*').eq('party_id', id);
+          setMembers(mem ?? []);
+        })
+        .subscribe();
+    })();
+    return () => { if (sub) supabase.removeChannel(sub); };
+  }, [id, user]);
+
+  const createParty = async () => {
+    if (!user || !name.trim()) return;
+    const { data, error } = await supabase.from('parties').insert({ host_id: user.id, name }).select().single();
+    if (error) return toast.error(error.message);
+    nav(`/party/${data.id}`);
   };
-
-  const handlePlaySong = (song: Song) => {
-    setSelectedSong(song);
-    playTrack(song as any);
-    setShowSongDialog(false);
+  const joinByCode = async () => {
+    const code = joinCode.trim().toUpperCase();
+    if (!code) return;
+    const { data, error } = await supabase.from('parties').select('id').eq('invite_code', code).maybeSingle();
+    if (error || !data) return toast.error('Invalid code');
+    nav(`/party/${data.id}`);
   };
+  const sendMsg = async () => {
+    if (!user || !msg.trim() || !id) return;
+    await supabase.from('party_messages').insert({ party_id: id, user_id: user.id, content: msg });
+    setMsg('');
+  };
+  const leave = async () => {
+    if (user && id) await supabase.from('party_members').delete().eq('party_id', id).eq('user_id', user.id);
+    nav('/party');
+  };
+  const copyCode = () => { if (party) { navigator.clipboard.writeText(party.invite_code); toast.success('Code copied!'); } };
 
-  const isPartyCreator = party && party.createdByName === currentUserName;
-
-  // Show fallback UI while party is loading (with timeout to switch to fallback)
-  if (!party) {
-    // After 2 seconds, show a fallback message instead of just "Loading"
+  if (id && party) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen gap-4">
-        <div className="text-lg text-muted-foreground">Setting up party...</div>
-        <p className="text-sm text-muted-foreground/70">If this takes too long, refresh the page</p>
+      <div className="min-h-screen pb-40 md:pb-32 md:pl-64">
+        <Navigation />
+        <main className="p-4 md:p-8 max-w-4xl mx-auto">
+          <div className="glass rounded-3xl p-6 mb-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold gradient-text">{party.name}</h1>
+                <div className="flex items-center gap-2 mt-2 text-sm">
+                  <span className="text-muted-foreground">Invite code:</span>
+                  <code className="glass px-3 py-1 rounded-lg font-mono">{party.invite_code}</code>
+                  <Button size="icon" variant="ghost" onClick={copyCode}><Copy className="w-4 h-4" /></Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1"><Users className="w-3 h-3" />{members.length} member{members.length !== 1 ? 's' : ''}</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={leave} className="gap-2"><LogOut className="w-4 h-4" />Leave</Button>
+            </div>
+          </div>
+
+          <div className="glass rounded-3xl p-4 flex flex-col h-[60vh]">
+            <div className="flex-1 overflow-y-auto space-y-2 mb-3">
+              {messages.length === 0 && <p className="text-center text-muted-foreground py-8">Say hi! 👋</p>}
+              {messages.map((m) => (
+                <div key={m.id} className={`p-2 rounded-lg max-w-[80%] ${m.user_id === user?.id ? 'ml-auto bg-primary/30' : 'bg-white/5'}`}>
+                  <p className="text-sm">{m.content}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input value={msg} onChange={(e) => setMsg(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendMsg()} placeholder="Message the party..." />
+              <Button onClick={sendMsg} size="icon"><Send className="w-4 h-4" /></Button>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 text-foreground p-4 lg:p-8">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content - Player and Party Info */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* Party Header with Better Styling */}
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="glass-hover rounded-2xl p-6 border border-white/10">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <Radio size={24} />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl lg:text-4xl font-bold gradient-text">{party.name}</h1>
-                    <p className="text-sm text-muted-foreground">Created by {party.createdByName}</p>
-                  </div>
-                </div>
-                {party.description && (
-                  <p className="text-muted-foreground mt-3">{party.description}</p>
-                )}
-              </div>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={() => {
-                  leaveParty();
-                  window.location.href = '/party';
-                }}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {/* Party Stats */}
-            <div className="flex gap-4 pt-4 border-t border-white/10">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase mb-1">Participants</p>
-                <p className="text-xl font-bold">{party.participantCount}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase mb-1">Type</p>
-                <Badge variant="outline" className="mt-1">{party.password ? '🔒 Private' : '🌍 Public'}</Badge>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Music Player */}
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }} className="glass-hover rounded-3xl p-6 space-y-4">
-            <div className="flex items-center gap-4">
-              <Avatar className="w-24 h-24 border-4 border-primary">
-                <AvatarImage src={currentTrack?.albumArt} />
-                <AvatarFallback><Music /></AvatarFallback>
-              </Avatar>
-              <div>
-                <h2 className="text-2xl font-bold">{currentTrack?.title}</h2>
-                <p className="text-muted-foreground">{currentTrack?.artist}</p>
-              </div>
-            </div>
-            {/* Player Controls */}
-            <div className="space-y-4">
-              {/* Progress Bar */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>0:00</span>
-                  <span>3:45</span>
-                </div>
-                <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full w-1/3 bg-gradient-to-r from-primary to-accent" />
-                </div>
-              </div>
-              
-              {/* Control Buttons */}
-              <div className="flex items-center justify-center gap-4">
-                <Button variant="outline" size="icon">
-                  <Music className="w-4 h-4" />
-                </Button>
-                <Button 
-                  size="lg" 
-                  className="bg-primary hover:bg-primary/90 rounded-full w-16 h-16"
-                  onClick={() => isPlaying ? pauseTrack() : resumeTrack()}
-                >
-                  {isPlaying ? "⏸" : "▶"}
-                </Button>
-                <Button variant="outline" size="icon">
-                  <Music className="w-4 h-4" />
-                </Button>
-              </div>
-
-              {/* Volume Control */}
-              <div className="flex items-center gap-3">
-                <span className="text-sm">Vol:</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={volume * 100}
-                  onChange={(e) => setVolume(parseFloat(e.target.value) / 100)}
-                  className="flex-1 h-2 bg-white/10 rounded-full cursor-pointer"
-                />
-                <span className="text-sm w-8">{Math.round(volume * 100)}%</span>
-              </div>
-
-              {/* Change Song Button - Only for Party Creator */}
-              {isPartyCreator && (
-                <Button
-                  onClick={() => setShowSongDialog(true)}
-                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                >
-                  <ChevronDown className="w-4 h-4 mr-2" />
-                  Change Song
-                </Button>
-              )}
-            </div>
-          </motion.div>
+    <div className="min-h-screen pb-40 md:pb-32 md:pl-64">
+      <Navigation />
+      <main className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
+        <h1 className="text-3xl font-bold gradient-text">🎉 Listening Parties</h1>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="glass rounded-2xl p-6 space-y-3">
+            <h2 className="font-semibold flex items-center gap-2"><Plus className="w-4 h-4" />Host a party</h2>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Party name" />
+            <Button onClick={createParty} className="w-full">Create party</Button>
+          </div>
+          <div className="glass rounded-2xl p-6 space-y-3">
+            <h2 className="font-semibold flex items-center gap-2"><Users className="w-4 h-4" />Join with code</h2>
+            <Input value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="ABC123" className="font-mono uppercase" />
+            <Button onClick={joinByCode} className="w-full">Join party</Button>
+          </div>
         </div>
-
-        {/* Sidebar - Chat and Participants */}
-        <div className="space-y-8">
-          {/* Participants */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="glass-hover rounded-3xl p-6">
-            <h3 className="text-xl font-bold mb-4 flex items-center"><Users className="w-5 h-5 mr-2"/> Participants ({party.participants.length})</h3>
-            <ScrollArea className="h-48">
-              <ul className="space-y-3">
-                {party.participants.map((p) => (
-                  <li key={p} className="flex items-center gap-3">
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${p}`} />
-                      <AvatarFallback>{p[0]}</AvatarFallback>
-                    </Avatar>
-                    <span>{p}</span>
-                  </li>
-                ))}
-              </ul>
-            </ScrollArea>
-          </motion.div>
-
-          {/* Chat */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="glass-hover rounded-3xl p-6 flex flex-col h-[50vh]">
-            <h3 className="text-xl font-bold mb-4">Live Chat</h3>
-            <ScrollArea className="flex-grow mb-4">
-              <div className="space-y-4">
-                {messages.map((msg) => (
-                  <div key={msg.id} className="flex gap-2">
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${msg.userId}`} />
-                      <AvatarFallback>{msg.userId[0]}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold text-sm">{msg.userId}</p>
-                      <p className="text-sm bg-muted rounded-lg px-3 py-2">{msg.message}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-            <div className="flex gap-2">
-              <Input
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Say something..."
-              />
-              <Button onClick={handleSendMessage}><Send className="w-4 h-4" /></Button>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Song Selector Dialog */}
-      <Dialog open={showSongDialog} onOpenChange={setShowSongDialog}>
-        <DialogContent className="max-w-2xl max-h-96">
-          <DialogHeader>
-            <DialogTitle>Select a Song</DialogTitle>
-            <DialogDescription>Choose a song to play in the party</DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="h-80">
-            <div className="grid gap-2 pr-4">
-              {uniqueSongs.map((song) => (
-                <div
-                  key={song.id}
-                  onClick={() => handlePlaySong(song)}
-                  className={`p-4 rounded-xl cursor-pointer transition-all ${
-                    selectedSong?.id === song.id
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 ring-2 ring-white'
-                      : 'bg-white/10 hover:bg-white/20'
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <img
-                      src={song.image}
-                      alt={song.name}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold truncate">{song.name}</p>
-                      <p className="text-sm text-white/70 truncate">{song.artist}</p>
-                      <p className="text-xs text-white/50 mt-1">{Math.floor(song.duration / 60)}:{String(song.duration % 60).padStart(2, '0')}</p>
-                    </div>
-                  </div>
-                </div>
+        {parties.length > 0 && (
+          <section>
+            <h2 className="font-semibold mb-3">Public rooms</h2>
+            <div className="space-y-2">
+              {parties.map((p) => (
+                <button key={p.id} onClick={() => nav(`/party/${p.id}`)} className="glass rounded-xl p-4 w-full text-left hover:bg-white/5 transition flex items-center justify-between">
+                  <span className="font-medium">{p.name}</span>
+                  <code className="text-xs text-muted-foreground font-mono">{p.invite_code}</code>
+                </button>
               ))}
             </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+          </section>
+        )}
+      </main>
     </div>
   );
-};
-
-export default Party;
+}

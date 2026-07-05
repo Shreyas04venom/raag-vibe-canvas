@@ -1,165 +1,63 @@
-import { motion } from "framer-motion";
-import { ListMusic, GripVertical, X, Play } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Navigation from "@/components/Navigation";
-import MiniPlayer from "@/components/MiniPlayer";
-import { usePlayer } from "@/contexts/PlayerContext";
-import EmptyState from "@/components/EmptyState";
+import Navigation from '@/components/Navigation';
+import { usePlayer } from '@/contexts/PlayerContext';
+import { Button } from '@/components/ui/button';
+import { Play, X, GripVertical, Trash2 } from 'lucide-react';
+import { motion, Reorder } from 'framer-motion';
 
 export default function Queue() {
-  const { queue, currentSong, removeFromQueue, play, clearQueue } = usePlayer();
-
-  // For demo purposes, implement basic drag visual feedback
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/html", index.toString());
-  };
+  const { queue, current, index, play, removeFromQueue, clearQueue, reorderQueue } = usePlayer();
 
   return (
-    <div className="min-h-screen pb-32 lg:pb-24">
+    <div className="min-h-screen pb-40 md:pb-32 md:pl-64">
       <Navigation />
+      <main className="p-4 md:p-8 max-w-3xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold gradient-text">Queue</h1>
+          {queue.length > 1 && <Button variant="outline" size="sm" onClick={clearQueue} className="gap-2"><Trash2 className="w-4 h-4" />Clear</Button>}
+        </div>
 
-      <main className="lg:ml-64 p-6 lg:p-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                  <ListMusic className="w-6 h-6" />
-                </div>
-                <h1 className="text-4xl lg:text-5xl font-bold gradient-text">
-                  Queue
-                </h1>
+        {current && (
+          <div className="glass rounded-2xl p-4 mb-6 border border-primary/30">
+            <p className="text-xs uppercase tracking-wider text-primary mb-2">Now playing</p>
+            <div className="flex items-center gap-3">
+              <img src={current.image} alt="" className="w-14 h-14 rounded-md" />
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold truncate">{current.name}</p>
+                <p className="text-sm text-muted-foreground truncate">{current.artist}</p>
               </div>
-              <p className="text-muted-foreground text-lg">
-                {queue.length} song{queue.length !== 1 ? 's' : ''} in queue
-              </p>
             </div>
-
-            {queue.length > 0 && (
-              <Button
-                variant="outline"
-                onClick={clearQueue}
-                className="glass-hover"
-              >
-                Clear Queue
-              </Button>
-            )}
           </div>
-        </motion.div>
-
-        {/* Now Playing */}
-        {currentSong && (
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mb-8"
-          >
-            <h2 className="text-xl font-bold mb-4">Now Playing</h2>
-            <div className="glass-hover rounded-2xl p-4 flex items-center gap-4">
-              <img
-                src={currentSong.albumArt}
-                alt={currentSong.title}
-                className="w-16 h-16 rounded-xl object-cover"
-              />
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">{currentSong.title}</h3>
-                <p className="text-muted-foreground">{currentSong.artist}</p>
-              </div>
-              <div className="flex items-center gap-2 text-primary">
-                <Play className="w-5 h-5 fill-current animate-pulse-glow" />
-                <span className="font-medium">Playing</span>
-              </div>
-            </div>
-          </motion.section>
         )}
 
-        {/* Queue List */}
+        <h2 className="text-sm font-semibold text-muted-foreground mb-2">Up next ({Math.max(0, queue.length - index - 1)})</h2>
         {queue.length === 0 ? (
-          <EmptyState
-            title="Queue is empty"
-            message="Add songs to your queue to see them here"
-            actionLabel="Browse Music"
-            onAction={() => window.location.href = "/home"}
-            icon={<ListMusic className="w-12 h-12 text-primary" />}
-          />
+          <p className="text-center text-muted-foreground py-16">Queue is empty.</p>
         ) : (
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <h2 className="text-xl font-bold mb-4">Next Up</h2>
-            <div className="space-y-2">
-              {queue.map((song, index) => (
-                <motion.div
-                  key={`${song.id}-${index}`}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.05 * index }}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e as unknown as React.DragEvent<HTMLDivElement>, index)}
-                  className="glass-hover rounded-xl p-4 flex items-center gap-4 cursor-move group"
-                >
-                  {/* Drag Handle */}
-                  <GripVertical className="w-5 h-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                  
-                  {/* Position */}
-                  <span className="text-muted-foreground font-medium w-6">
-                    {index + 1}
-                  </span>
-
-                  {/* Album Art */}
-                  <img
-                    src={song.albumArt}
-                    alt={song.title}
-                    className="w-12 h-12 rounded-lg object-cover"
-                  />
-
-                  {/* Song Info */}
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{song.title}</h3>
-                    <p className="text-sm text-muted-foreground">{song.artist}</p>
-                  </div>
-
-                  {/* Duration */}
-                  <span className="text-sm text-muted-foreground">
-                    {song.duration}
-                  </span>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => play(song)}
-                    >
-                      <Play className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
-                      onClick={() => removeFromQueue(song.id)}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.section>
+          <Reorder.Group axis="y" values={queue} onReorder={(newList) => {
+            // Basic reorder: find first mismatch and move
+            for (let i = 0; i < newList.length; i++) {
+              if (newList[i].id !== queue[i]?.id) {
+                const from = queue.findIndex((t) => t.id === newList[i].id);
+                if (from >= 0 && from !== i) reorderQueue(from, i);
+                break;
+              }
+            }
+          }} className="space-y-1">
+            {queue.map((t, i) => (
+              <Reorder.Item key={t.id + i} value={t} className="flex items-center gap-2 glass rounded-xl p-2 cursor-grab">
+                <GripVertical className="w-4 h-4 text-muted-foreground" />
+                <img src={t.image} alt="" className="w-10 h-10 rounded" />
+                <div className="min-w-0 flex-1">
+                  <p className={`text-sm truncate ${i === index ? 'text-primary font-medium' : ''}`}>{t.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{t.artist}</p>
+                </div>
+                <Button size="icon" variant="ghost" onClick={() => play(t, queue)}><Play className="w-4 h-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => removeFromQueue(i)}><X className="w-4 h-4" /></Button>
+              </Reorder.Item>
+            ))}
+          </Reorder.Group>
         )}
       </main>
-
-      <MiniPlayer />
     </div>
   );
 }
