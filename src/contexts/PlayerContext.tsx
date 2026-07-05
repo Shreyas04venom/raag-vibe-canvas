@@ -54,7 +54,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   // Sync progress with actual audio playback
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     
     if (isPlaying && currentSong) {
       // Configure audio player callbacks
