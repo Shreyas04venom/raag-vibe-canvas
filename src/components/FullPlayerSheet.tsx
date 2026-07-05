@@ -1,7 +1,7 @@
 import { usePlayer } from '@/contexts/PlayerContext';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { motion } from 'framer-motion';
-import { Play, Pause, SkipBack, SkipForward, X, Heart, Volume2, VolumeX, Shuffle, Repeat, Repeat1, ListMusic, FileText } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, X, Heart, Volume2, VolumeX, Shuffle, Repeat, Repeat1, ListMusic, FileText, Radio, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { useEffect, useState } from 'react';
@@ -100,6 +100,12 @@ export default function FullPlayerSheet({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between gap-2">
           <Button size="icon" variant="ghost" onClick={() => toggleFavorite(p.current!)}>
             <Heart className={`w-5 h-5 ${isFavorite(p.current.id) ? 'fill-accent text-accent' : ''}`} />
+          </Button>
+          <Button size="icon" variant="ghost" onClick={() => p.startRadio()} title="Start radio">
+            <Radio className="w-5 h-5" />
+          </Button>
+          <Button size="icon" variant="ghost" onClick={() => p.shareCurrent()} title="Share">
+            <Share2 className="w-5 h-5" />
           </Button>
           <div className="flex-1 flex items-center gap-2">
             <Button size="icon" variant="ghost" onClick={p.toggleMute}>

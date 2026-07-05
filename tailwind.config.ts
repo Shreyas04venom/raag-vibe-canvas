@@ -109,6 +109,10 @@ export default {
         "spin-slow": {
           from: { transform: "rotate(0deg)" },
           to: { transform: "rotate(360deg)" }
+        },
+        "eq": {
+          "0%, 100%": { height: "20%" },
+          "50%": { height: "100%" }
         }
       },
       animation: {
@@ -123,6 +127,7 @@ export default {
         "float": "float 3s ease-in-out infinite",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
         "spin-slow": "spin-slow 20s linear infinite",
+        "eq": "eq 0.9s ease-in-out infinite",
       },
       backdropBlur: {
         xs: '2px',
