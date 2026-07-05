@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function updateProfile(patch: Partial<Profile>) {
     if (!user) return;
     const { error } = await supabase.from('profiles').update(patch as any).eq('id', user.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setProfile((p) => (p ? { ...p, ...patch } : p));
     toast.success('Profile updated');
   }
