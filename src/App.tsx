@@ -2,59 +2,66 @@ import { Toaster } from "./components/ui/toaster";
 import { Toaster as Sonner } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { PlayerProvider } from "./contexts/PlayerContext";
-import { PlaylistProvider } from "./contexts/PlaylistContext";
-import { MusicProvider } from "./contexts/MusicContext";
-import { PartyProvider } from "./contexts/PartyContext";
+import { LibraryProvider } from "./contexts/LibraryContext";
+import { WeatherProvider } from "./contexts/WeatherContext";
+import GlobalPlayer from "./components/GlobalPlayer";
+import CommandPalette from "./components/CommandPalette";
 import Splash from "./pages/Splash";
 import Auth from "./pages/Auth";
 import Home from "./pages/Home";
 import Search from "./pages/Search";
-import Player from "./pages/Player";
+import PlayerPage from "./pages/PlayerPage";
 import Party from "./pages/Party";
-import PartyLobby from "./pages/PartyLobby";
 import Profile from "./pages/Profile";
 import Library from "./pages/Library";
-import TrendingAll from "./pages/TrendingAll";
+import PlaylistDetail from "./pages/PlaylistDetail";
 import Settings from "./pages/Settings";
 import Queue from "./pages/Queue";
 import NotFound from "./pages/NotFound";
+import { ReactNode } from "react";
 
 const queryClient = new QueryClient();
+
+function Protected({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/auth" replace />;
+  return <>{children}</>;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      <Sonner />
+      <Sonner position="top-center" richColors />
       <BrowserRouter>
         <AuthProvider>
-          <MusicProvider>
-            <PlayerProvider>
-              <PlaylistProvider>
-                <PartyProvider>
-                  <Routes>
-                    <Route path="/" element={<Splash />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/home" element={<Home />} />
-                    <Route path="/search" element={<Search />} />
-                    <Route path="/player" element={<Player />} />
-                    <Route path="/party" element={<PartyLobby />} />
-                    <Route path="/party/:partyId" element={<Party />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/library" element={<Library />} />
-                    <Route path="/trending-all" element={<TrendingAll />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/queue" element={<Queue />} />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </PartyProvider>
-              </PlaylistProvider>
-            </PlayerProvider>
-          </MusicProvider>
+          <PlayerProvider>
+            <LibraryProvider>
+              <WeatherProvider>
+                <Routes>
+                  <Route path="/" element={<Splash />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/home" element={<Protected><Home /></Protected>} />
+                  <Route path="/search" element={<Protected><Search /></Protected>} />
+                  <Route path="/player" element={<Protected><PlayerPage /></Protected>} />
+                  <Route path="/party" element={<Protected><Party /></Protected>} />
+                  <Route path="/party/:id" element={<Protected><Party /></Protected>} />
+                  <Route path="/profile" element={<Protected><Profile /></Protected>} />
+                  <Route path="/library" element={<Protected><Library /></Protected>} />
+                  <Route path="/playlist/:id" element={<Protected><PlaylistDetail /></Protected>} />
+                  <Route path="/settings" element={<Protected><Settings /></Protected>} />
+                  <Route path="/queue" element={<Protected><Queue /></Protected>} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+                <GlobalPlayer />
+                <CommandPalette />
+              </WeatherProvider>
+            </LibraryProvider>
+          </PlayerProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
