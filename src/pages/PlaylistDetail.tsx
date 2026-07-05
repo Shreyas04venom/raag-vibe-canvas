@@ -7,7 +7,7 @@ import { usePlayer } from '@/contexts/PlayerContext';
 import type { Track } from '@/types/track';
 import { Button } from '@/components/ui/button';
 import { Play, ArrowLeft, Music2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/app-client';
 
 export default function PlaylistDetail() {
   const { id } = useParams();

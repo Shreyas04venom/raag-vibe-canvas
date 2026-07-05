@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/app-client';
 import type { Track, Playlist } from '@/types/track';
 
 export async function fetchFavorites(userId: string): Promise<Track[]> {
