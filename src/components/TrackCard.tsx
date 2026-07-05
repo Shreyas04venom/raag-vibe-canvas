@@ -1,10 +1,11 @@
 import { Track } from '@/types/track';
-import { Heart, Play, MoreVertical, Plus } from 'lucide-react';
+import { Heart, Play, MoreVertical, Plus, Radio, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { usePlayer } from '@/contexts/PlayerContext';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 
 interface Props {
   track: Track;
@@ -13,8 +14,9 @@ interface Props {
 }
 
 export default function TrackCard({ track, queue, compact }: Props) {
-  const { play, addToQueue, playNext } = usePlayer();
+  const { play, addToQueue, playNext, startRadio, current, isPlaying } = usePlayer();
   const { isFavorite, toggleFavorite, playlists, addToPlaylist } = useLibrary();
+  const isCurrent = current?.id === track.id;
   const liked = isFavorite(track.id);
 
   if (compact) {
