@@ -6,7 +6,8 @@ export interface Track {
   image: string;
   previewUrl: string;
   duration: number;
-  source: string;
+  source: string; // 'youtube' | 'itunes'
+  videoId?: string;
 }
 
 export interface Playlist {
