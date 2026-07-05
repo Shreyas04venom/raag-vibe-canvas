@@ -14,16 +14,377 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      favorites: {
+        Row: {
+          created_at: string
+          id: string
+          track: Json
+          track_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          track: Json
+          track_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          track?: Json
+          track_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      history: {
+        Row: {
+          id: string
+          played_at: string
+          track: Json
+          track_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          played_at?: string
+          track: Json
+          track_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          played_at?: string
+          track?: Json
+          track_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      parties: {
+        Row: {
+          created_at: string
+          current_track: Json | null
+          host_id: string
+          id: string
+          invite_code: string
+          is_playing: boolean
+          name: string
+          position_ms: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_track?: Json | null
+          host_id: string
+          id?: string
+          invite_code?: string
+          is_playing?: boolean
+          name: string
+          position_ms?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_track?: Json | null
+          host_id?: string
+          id?: string
+          invite_code?: string
+          is_playing?: boolean
+          name?: string
+          position_ms?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      party_members: {
+        Row: {
+          id: string
+          joined_at: string
+          party_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          party_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          party_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "party_members_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      party_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          party_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          party_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          party_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "party_messages_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      party_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          party_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          party_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          party_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "party_reactions_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playlist_tracks: {
+        Row: {
+          added_at: string
+          id: string
+          playlist_id: string
+          position: number
+          track: Json
+          track_id: string
+        }
+        Insert: {
+          added_at?: string
+          id?: string
+          playlist_id: string
+          position?: number
+          track: Json
+          track_id: string
+        }
+        Update: {
+          added_at?: string
+          id?: string
+          playlist_id?: string
+          position?: number
+          track?: Json
+          track_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playlist_tracks_playlist_id_fkey"
+            columns: ["playlist_id"]
+            isOneToOne: false
+            referencedRelation: "playlists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playlists: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          country: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          premium: boolean
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          country?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          premium?: boolean
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          country?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          premium?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          audio_quality: string
+          crossfade: number
+          equalizer: Json
+          language: string
+          notifications: Json
+          theme: string
+          updated_at: string
+          user_id: string
+          volume: number
+        }
+        Insert: {
+          audio_quality?: string
+          crossfade?: number
+          equalizer?: Json
+          language?: string
+          notifications?: Json
+          theme?: string
+          updated_at?: string
+          user_id: string
+          volume?: number
+        }
+        Update: {
+          audio_quality?: string
+          crossfade?: number
+          equalizer?: Json
+          language?: string
+          notifications?: Json
+          theme?: string
+          updated_at?: string
+          user_id?: string
+          volume?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +511,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
